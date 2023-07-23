@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en-US">
+
+<head>
+    <meta charset="utf-8" />
+    <title>Mandelbrot Set</title>
+</head>
+<style>
+    body {
+        height: 100%;
+        width: 100%;
+    }
+
+
+    canvas {
+        background-color: #ffff00;
+        display: block;
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 100%;
+        width: 100%;
+    }
+</style>
+
+<body>
+    <script type="module">
+        import init, { draw_mb } from "./pkg/rustlebrot.js";
+        var scale = 2.4;
+        var x = -0.765;
+        var y = 0.0;
+        const canvas_zoom = 1
+        const iterations = 100 * canvas_zoom
+
+
+
+
+        const draw = (can) => {
+            //console.log("foo");
+            can.width = window.innerWidth / canvas_zoom;
+            can.height = window.innerHeight / canvas_zoom;
+            init().then(() => {
+
+                draw_mb(can, x, y, scale, iterations);
+
+            })
+        };
+
+
+        const zoom = (z, zx, zy) => {
+            x = (x - zx) * z + zx;
+            y = (y - zy) * z + zy;
+
+
+
+
+            scale = scale * z;
+            console.log(x)
+            console.log(y)
+
+            draw(canvas);
+        }
+
+        const client_to_image = (cx, cy) => {
+            const pixel_scale = scale / canvas.height;
+            const [cx_d, cy_d] = [cx - canvas.width / 2, cy - canvas.height / 2]
+
+            return [pixel_scale * cx_d + x, pixel_scale * cy_d + y]
+        }
+
+
+        const zoom_event = (dy, cx, cy) => {
+            const z = 1.4 ** (dy / Math.abs(dy));
+            const [zx, zy] = client_to_image(cx, cy);
+            console.log("foo", z, zx, zy)
+            zoom(z, zx, zy)
+        }
+
+        const click_event = (cx, cy) => {
+            var [xx, yy] = client_to_image(cx, cy);
+            x = xx;
+            y = yy;
+            draw(canvas);
+        }
+
+        var drawtimer;
+        var zoomtimer;
+
+        window.addEventListener('resize', () => {
+
+            const drawc = () => draw(canvas)
+
+            clearTimeout(drawtimer);
+            drawtimer = setTimeout(drawc, 100);
+        })
+
+        window.addEventListener('wheel', (event) => {
+            // console.log(event.deltaY);
+            // console.log(event.clientX);
+            //  console.log(2 ** (event.deltaY / Math.abs(event.deltaY)))
+            const zoomc = () => zoom_event(event.deltaY, event.clientX / canvas_zoom, event.clientY / canvas_zoom);
+
+            clearTimeout(zoomtimer);
+            zoomtimer = setTimeout(zoomc, 100);
+
+        })
+
+        window.addEventListener("click", (event) => {
+            console.log(event);
+
+            click_event(event.clientX / canvas_zoom, event.clientY / canvas_zoom);
+        });
+
+
+
+        draw(canvas)
+
+    </script>
+
+    <body>
+        <canvas id="canvas"></canvas>
+        <!-- height="1360" width="1500"-->
+    </body>
+</body>
+
+</html>
